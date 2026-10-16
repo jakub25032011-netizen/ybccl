@@ -1,0 +1,419 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YBC Challenge List - Leaderboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg: #0b0b0f;
+      --panel: #15151c;
+      --panel2: #1d1d27;
+      --red: #ff303b;
+      --text: #f5f5f7;
+      --muted: #a4a4b2;
+      --border: #30303b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 30px 20px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: #101015;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 48px);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+    }
+
+    .title-red {
+      color: var(--red);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 12px 0 0;
+      font-size: 14px;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 15px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    nav a {
+      color: #d6d6df;
+      text-decoration: none;
+      padding: 10px 15px;
+      border-radius: 7px;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    nav a:hover,
+    nav a.active {
+      color: white;
+      background: #35171c;
+    }
+
+    nav a.active {
+      box-shadow: inset 0 -2px var(--red);
+    }
+
+    main {
+      width: min(1200px, 94%);
+      margin: 30px auto;
+    }
+
+    .intro {
+      margin-bottom: 24px;
+    }
+
+    .intro h2 {
+      margin: 0 0 8px;
+      font-size: 27px;
+    }
+
+    .intro p {
+      margin: 0;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    #search {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: white;
+      outline: none;
+      font-size: 15px;
+    }
+
+    #search:focus {
+      border-color: var(--red);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+      text-align: left;
+    }
+
+    th {
+      padding: 16px;
+      background: var(--panel2);
+      color: #d8d8e2;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    td {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    tbody tr:hover {
+      background: #202029;
+    }
+
+    .rank {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .level-name {
+      color: white;
+      font-weight: 700;
+    }
+
+    .legacy {
+      display: inline-block;
+      margin-left: 7px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: #37313c;
+      color: #d9c6eb;
+      font-size: 10px;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+
+    .points {
+      color: #ff6870;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status {
+      padding: 25px 16px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .error {
+      color: #ff858b;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 12px 2px;
+    }
+
+    footer {
+      padding: 25px 15px;
+      margin-top: 45px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        padding-top: 24px;
+      }
+
+      main {
+        width: 96%;
+        margin-top: 22px;
+      }
+
+      td, th {
+        padding: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>YBC <span class="title-red">Challenge List</span></h1>
+    <p class="subtitle">The official YBC Challenge List leaderboard</p>
+  </header>
+
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="explore.html">Explore</a>
+    <a href="leaderboard.html" class="active">Leaderboard</a>
+    <a href="platformer.html">Platformer</a>
+    <a href="spam.html">Spam</a>
+  </nav>
+
+  <main>
+    <section class="intro">
+      <h2>Challenge Leaderboard</h2>
+      <p>
+        Browse the ranked YBCCL challenges, their creators and verifiers,
+        and the points awarded for each position.
+      </p>
+    </section>
+
+    <div class="toolbar">
+      <input
+        id="search"
+        type="search"
+        placeholder="Search levels, creators or verifiers..."
+        autocomplete="off"
+        aria-label="Search challenges"
+      >
+    </div>
+
+    <div class="count" id="count">Connecting to the database...</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Level</th>
+            <th>Creator</th>
+            <th>Verifier</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody id="levels-table">
+          <tr>
+            <td colspan="5" class="status">Loading challenges...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    YBC Challenge List · Community-run Geometry Dash challenge rankings
+  </footer>
+
+  <script>
+    // Replace these two values with your Supabase project details.
+    const SUPABASE_URL = "https://hdsorzrcvvyakckbgegk.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable__RCrx7HGA5RDkv0t63O0sg_JNT-qk8P";
+
+    const pointsByPosition = {
+      1: 1000, 2: 967, 3: 934, 4: 902, 5: 870,
+      6: 839, 7: 808, 8: 778, 9: 748, 10: 718,
+      11: 689, 12: 661, 13: 633, 14: 605, 15: 578,
+      16: 552, 17: 526, 18: 500, 19: 475, 20: 451,
+      21: 427, 22: 403, 23: 380, 24: 358, 25: 336,
+      26: 315, 27: 294, 28: 274, 29: 255, 30: 236,
+      31: 217, 32: 200, 33: 183, 34: 166, 35: 150,
+      36: 135, 37: 121, 38: 107, 39: 94, 40: 82,
+      41: 70, 42: 60, 43: 50, 44: 41, 45: 33,
+      46: 26, 47: 20, 48: 15, 49: 12, 50: 10
+    };
+
+    const tableBody = document.getElementById("levels-table");
+    const searchInput = document.getElementById("search");
+    const countLabel = document.getElementById("count");
+
+    let levels = [];
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[character]);
+    }
+
+    function getPoints(level) {
+      if (level.is_legacy || !level.position) return 0;
+      return pointsByPosition[level.position] ?? 0;
+    }
+
+    function renderLevels() {
+      const query = searchInput.value.trim().toLowerCase();
+
+      const filtered = levels.filter(level =>
+        String(level.name ?? "").toLowerCase().includes(query) ||
+        String(level.creator ?? "").toLowerCase().includes(query) ||
+        String(level.verifier ?? "").toLowerCase().includes(query) ||
+        String(level.position ?? "").includes(query)
+      );
+
+      countLabel.textContent =
+        `Showing ${filtered.length} of ${levels.length} challenges`;
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="status">
+              ${levels.length === 0
+                ? "No challenges have been added yet."
+                : "No challenges match your search."}
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(level => `
+        <tr>
+          <td class="rank">
+            ${level.position == null ? "—" : "#" + escapeHTML(level.position)}
+          </td>
+          <td class="level-name">
+            ${escapeHTML(level.name)}
+            ${level.is_legacy ? '<span class="legacy">LEGACY</span>' : ""}
+          </td>
+          <td>${escapeHTML(level.creator || "Unknown")}</td>
+          <td>${escapeHTML(level.verifier || "Unknown")}</td>
+          <td class="points">${getPoints(level).toLocaleString("en-GB")}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function loadChallenges() {
+      if (
+        SUPABASE_URL === "YOUR_PROJECT_URL" ||
+        SUPABASE_PUBLISHABLE_KEY === "YOUR_PUBLISHABLE_KEY"
+      ) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="status">
+              Add your Supabase Project URL and publishable key
+              in the website code to connect the leaderboard.
+            </td>
+          </tr>`;
+        countLabel.textContent = "Supabase setup needed";
+        return;
+      }
+
+      try {
+        const supabase = window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_PUBLISHABLE_KEY
+        );
+
+        const { data, error } = await supabase
+          .from("challenges")
+          .select("id, position, name, creator, verifier, is_legacy")
+          .order("position", { ascending: true, nullsFirst: false });
+
+        if (error) throw error;
+
+        levels = data || [];
+        renderLevels();
+      } catch (error) {
+        console.error("YBCCL database error:", error);
+
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="status error">
+              Couldn't load challenges. Check your Supabase settings
+              and database permissions, then refresh this page.
+            </td>
+          </tr>`;
+        countLabel.textContent = "Database connection failed";
+      }
+    }
+
+    searchInput.addEventListener("input", renderLevels);
+    loadChallenges();
+  </script>
+</body>
+</html>

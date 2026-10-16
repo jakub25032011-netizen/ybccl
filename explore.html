@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore the Lists | YBC</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #101116;
+            color: white;
+        }
+
+        header {
+            padding: 22px 8%;
+            background: #18191f;
+            border-bottom: 1px solid #292a33;
+        }
+
+        header h2 {
+            margin: 0;
+            color: #e34450;
+            letter-spacing: 2px;
+        }
+
+        main {
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 75px 24px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #a5a7b0;
+            margin-bottom: 42px;
+        }
+
+        .lists {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .list-button {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 190px;
+            padding: 25px 15px;
+            background: #1b1d25;
+            border: 1px solid #343641;
+            border-radius: 14px;
+            color: white;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        .list-button:hover {
+            transform: translateY(-5px);
+            border-color: #e34450;
+            background: #25202a;
+        }
+
+        .list-button h2 {
+            margin: 0 0 12px;
+            color: #e34450;
+            font-size: 28px;
+        }
+
+        .list-button p {
+            color: #b9bac3;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 35px;
+            color: #b9bac3;
+            text-decoration: none;
+        }
+
+        .back:hover {
+            color: white;
+        }
+
+        @media (max-width: 700px) {
+            .lists {
+                grid-template-columns: 1fr;
+            }
+
+            main {
+                padding-top: 45px;
+            }
+
+            .list-button {
+                min-height: 145px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h2>YBC LISTS</h2>
+    </header>
+
+    <main>
+        <h1>Explore the Lists</h1>
+        <p class="subtitle">
+            Choose a leaderboard to explore.
+        </p>
+
+        <div class="lists">
+            <a href="leaderboard.html" class="list-button">
+                <h2>YBCCL</h2>
+                <p>YBC Challenge List</p>
+            </a>
+
+            <a href="platformer.html" class="list-button">
+                <h2>YBCPL</h2>
+                <p>YBC Platformer List</p>
+            </a>
+
+            <a href="spam.html" class="list-button">
+                <h2>YBCSPCL</h2>
+                <p>YBC Spam Challenge List</p>
+            </a>
+        </div>
+
+        <a href="index.html" class="back">
+            ← Back to Home
+        </a>
+    </main>
+</body>
+</html>

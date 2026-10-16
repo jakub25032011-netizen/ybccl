@@ -1,0 +1,579 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YBCCL Admin Panel</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #101010;
+      color: #f5f5f5;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1050px;
+      margin: auto;
+    }
+
+    h1 { color: #ff4545; margin-bottom: 6px; }
+    h2 { margin-top: 0; }
+    .muted { color: #aaa; }
+
+    .panel {
+      background: #1b1b1b;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 22px;
+      margin: 20px 0;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 7px 0;
+      border-radius: 7px;
+      font-size: 15px;
+    }
+
+    input {
+      background: #111;
+      color: white;
+      border: 1px solid #444;
+    }
+
+    button {
+      border: none;
+      background: #e83b3b;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover { background: #ff5050; }
+    button.secondary { background: #383838; }
+    button.delete { background: #8d2020; }
+    button:disabled { opacity: .55; cursor: wait; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 14px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .checkbox-row input {
+      width: auto;
+      margin: 0;
+    }
+
+    .challenge {
+      display: grid;
+      grid-template-columns: 65px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      background: #252525;
+      padding: 13px;
+      margin: 9px 0;
+      border-radius: 8px;
+    }
+
+    .position {
+      color: #ff5555;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .challenge-name {
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .details {
+      color: #aaa;
+      font-size: 13px;
+      margin-top: 5px;
+      overflow-wrap: anywhere;
+    }
+
+    .actions { display: flex; gap: 6px; }
+    .actions button { width: auto; margin: 0; padding: 10px; }
+
+    #message {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .error { color: #ff7070; }
+    .success { color: #80e6a0; }
+
+    .hint {
+      background: #292020;
+      border-left: 3px solid #e83b3b;
+      padding: 10px 12px;
+      color: #ddd;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .challenge { grid-template-columns: 42px minmax(0, 1fr); }
+      .actions { grid-column: 2; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <h1>YBCCL Admin Panel</h1>
+  <p class="muted">YBC Challenge List management</p>
+
+  <div id="loginPanel" class="panel">
+    <h2>Admin Login</h2>
+    <form id="loginForm">
+      <input id="email" type="email" placeholder="Admin email" required>
+      <input id="password" type="password" placeholder="Password" required>
+      <button id="loginButton" type="submit">Log In</button>
+    </form>
+    <p id="loginMessage" role="status"></p>
+  </div>
+
+  <div id="dashboard" hidden>
+    <div class="panel">
+   
+    <div class="panel" id="editorPanel">
+      <h2 id="editorTitle">Add a Challenge</h2>
+
+      <p class="hint">
+        Adding a challenge at an occupied position shifts the other challenges
+        down. Moving a challenge rearranges the positions between its old and
+        new places. Deleting a challenge closes the gap automatically.
+      </p>
+
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+    <div>
+      <h2>Dashboard</h2>
+      <p id="account" class="muted"></p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button
+        type="button"
+        class="secondary"
+        style="width:auto"
+        onclick="window.location.href='players-admin.html'">
+        Player Completions
+      </button>
+
+      <button id="logoutButton" class="secondary" style="width:auto">
+        Log Out
+      </button>
+    </div>
+  </div>
+
+  <p id="message" role="status"></p>
+</div>
+
+      <form id="challengeForm">
+        <div class="form-grid">
+          <div>
+            <label for="position">Position</label>
+            <input id="position" type="number" min="1" step="1" required>
+          </div>
+
+          <div>
+            <label for="name">Challenge name</label>
+            <input id="name" type="text" maxlength="200" required>
+          </div>
+
+          <div>
+            <label for="creator">Creator</label>
+            <input id="creator" type="text" maxlength="200" required>
+          </div>
+
+          <div>
+            <label for="verifier">Verifier</label>
+            <input id="verifier" type="text" maxlength="200" required>
+          </div>
+        </div>
+
+        <label class="checkbox-row">
+          <input id="legacy" type="checkbox">
+          Legacy level (worth 0 points)
+        </label>
+
+        <p id="pointsPreview" class="muted">Points: 1000</p>
+
+        <button type="submit" id="saveButton">Add Challenge</button>
+        <button type="button" id="cancelButton" class="secondary" hidden>
+          Cancel Editing
+        </button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Current Challenges</h2>
+      <p class="muted">Challenges are shown in position order.</p>
+      <div id="challengeList">Loading challenges...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Public browser key only. Never put a Supabase service-role key here.
+  const SUPABASE_URL = "https://hdsorzrcvvyakckbgegk.supabase.co";
+  const SUPABASE_KEY = "sb_publishable__RCrx7HGA5RDkv0t63O0sg_JNT-qk8P";
+
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const $ = id => document.getElementById(id);
+
+  let editingId = null;
+  let challenges = [];
+  let busy = false;
+
+  // Approved YBCCL points for positions 1–50.
+  const pointsTable = [
+    1000,967,934,902,870,839,808,778,748,718,
+    689,661,633,605,578,552,526,500,475,451,
+    427,403,380,358,336,315,294,274,255,236,
+    217,200,183,166,150,135,121,107,94,82,
+    70,60,50,41,33,26,20,15,12,10
+  ];
+
+  function pointsFor(position, legacy) {
+    if (legacy) return 0;
+    if (position >= 1 && position <= 50) {
+      return pointsTable[position - 1];
+    }
+    return 0;
+  }
+
+  function showMessage(message, type = "") {
+    $("message").textContent = message;
+    $("message").className = type;
+  }
+
+  function setBusy(value) {
+    busy = value;
+    $("saveButton").disabled = value;
+    $("logoutButton").disabled = value;
+    $("loginButton").disabled = value;
+    $("cancelButton").disabled = value;
+  }
+
+  function updatePointsPreview() {
+    const position = Number($("position").value);
+    const legacy = $("legacy").checked;
+    let text = "Points: —";
+
+    if (Number.isInteger(position) && position > 0) {
+      text = `Points: ${pointsFor(position, legacy)}`;
+
+      if (position > 50 && !legacy) {
+        text += " (no points configured above position 50)";
+      }
+    }
+
+    $("pointsPreview").textContent = text;
+  }
+
+  $("position").addEventListener("input", updatePointsPreview);
+  $("legacy").addEventListener("change", updatePointsPreview);
+
+  async function checkAdmin() {
+    const { data: { session }, error } = await db.auth.getSession();
+    if (error) throw error;
+
+    if (!session) {
+      $("loginPanel").hidden = false;
+      $("dashboard").hidden = true;
+      return false;
+    }
+
+    const { data: isAdmin, error: adminError } =
+      await db.rpc("is_ybcc_admin");
+
+    if (adminError) {
+      throw new Error("Could not verify admin permissions: " + adminError.message);
+    }
+
+    if (isAdmin !== true) {
+      await db.auth.signOut();
+      $("loginPanel").hidden = false;
+      $("dashboard").hidden = true;
+      throw new Error("This account is not authorised as a YBCCL admin.");
+    }
+
+    $("loginPanel").hidden = true;
+    $("dashboard").hidden = false;
+    $("account").textContent = session.user.email || "Signed in";
+    await loadChallenges();
+    return true;
+  }
+
+  $("loginForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    $("loginMessage").textContent = "";
+    $("loginButton").disabled = true;
+
+    try {
+      const email = $("email").value.trim();
+      const password = $("password").value;
+
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      await checkAdmin();
+    } catch (error) {
+      $("loginMessage").textContent = error.message;
+      $("loginMessage").className = "error";
+    } finally {
+      $("loginButton").disabled = false;
+    }
+  });
+
+  $("logoutButton").addEventListener("click", async () => {
+    const { error } = await db.auth.signOut();
+
+    if (error) {
+      showMessage("Log out failed: " + error.message, "error");
+      return;
+    }
+
+    resetEditor();
+    $("loginPanel").hidden = false;
+    $("dashboard").hidden = true;
+    $("password").value = "";
+    $("loginMessage").textContent = "";
+  });
+
+  async function loadChallenges() {
+    $("challengeList").textContent = "Loading challenges...";
+
+    const { data, error } = await db
+      .from("challenges")
+      .select("id, position, name, creator, verifier, is_legacy")
+      .order("position", { ascending: true });
+
+    if (error) {
+      $("challengeList").textContent = "Could not load challenges.";
+      showMessage(error.message, "error");
+      return;
+    }
+
+    challenges = data || [];
+    renderChallenges();
+  }
+
+  function renderChallenges() {
+    const list = $("challengeList");
+    list.replaceChildren();
+
+    if (!challenges.length) {
+      list.textContent = "No challenges found.";
+      return;
+    }
+
+    for (const challenge of challenges) {
+      const card = document.createElement("div");
+      card.className = "challenge";
+
+      const position = document.createElement("div");
+      position.className = "position";
+      position.textContent = "#" + challenge.position;
+
+      const info = document.createElement("div");
+
+      const name = document.createElement("div");
+      name.className = "challenge-name";
+      name.textContent = challenge.name +
+        (challenge.is_legacy ? " [LEGACY]" : "");
+
+      const details = document.createElement("div");
+      details.className = "details";
+      details.textContent =
+        `Creator: ${challenge.creator} · Verifier: ${challenge.verifier} · ` +
+        `${pointsFor(challenge.position, challenge.is_legacy)} points`;
+
+      info.append(name, details);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const edit = document.createElement("button");
+      edit.className = "secondary";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", () => startEditing(challenge));
+
+      const remove = document.createElement("button");
+      remove.className = "delete";
+      remove.textContent = "Delete";
+      remove.addEventListener("click", () => deleteChallenge(challenge));
+
+      actions.append(edit, remove);
+      card.append(position, info, actions);
+      list.append(card);
+    }
+  }
+
+  function startEditing(challenge) {
+    if (busy) return;
+
+    editingId = challenge.id;
+    $("position").value = challenge.position;
+    $("name").value = challenge.name;
+    $("creator").value = challenge.creator;
+    $("verifier").value = challenge.verifier;
+    $("legacy").checked = challenge.is_legacy;
+
+    $("editorTitle").textContent = `Edit Challenge #${challenge.position}`;
+    $("saveButton").textContent = "Save Changes";
+    $("cancelButton").hidden = false;
+
+    updatePointsPreview();
+    $("editorPanel").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function resetEditor() {
+    editingId = null;
+    $("challengeForm").reset();
+    $("editorTitle").textContent = "Add a Challenge";
+    $("saveButton").textContent = "Add Challenge";
+    $("cancelButton").hidden = true;
+    updatePointsPreview();
+  }
+
+  $("cancelButton").addEventListener("click", resetEditor);
+
+  $("challengeForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (busy) return;
+
+    const position = Number($("position").value);
+    const name = $("name").value.trim();
+    const creator = $("creator").value.trim();
+    const verifier = $("verifier").value.trim();
+    const is_legacy = $("legacy").checked;
+
+    if (!Number.isInteger(position) || position < 1) {
+      showMessage("Position must be a whole number greater than 0.", "error");
+      return;
+    }
+
+    if (!name || !creator || !verifier) {
+      showMessage("Please fill in every field.", "error");
+      return;
+    }
+
+    // Prevent accidentally sending an edit with an invalid/stale ID.
+    if (editingId && !challenges.some(c => String(c.id) === String(editingId))) {
+      showMessage("This challenge is no longer in the list. Reload and try again.", "error");
+      return;
+    }
+
+    setBusy(true);
+    showMessage("Saving challenge and updating positions...");
+
+    try {
+      let result;
+
+      if (editingId) {
+        result = await db.rpc("ybcc_admin_update_challenge", {
+          p_id: String(editingId),
+          p_position: position,
+          p_name: name,
+          p_creator: creator,
+          p_verifier: verifier,
+          p_is_legacy: is_legacy
+        });
+      } else {
+        result = await db.rpc("ybcc_admin_add_challenge", {
+          p_position: position,
+          p_name: name,
+          p_creator: creator,
+          p_verifier: verifier,
+          p_is_legacy: is_legacy
+        });
+      }
+
+      if (result.error) throw result.error;
+
+      resetEditor();
+      showMessage("Challenge saved and positions updated successfully.", "success");
+      await loadChallenges();
+    } catch (error) {
+      showMessage("Save failed: " + error.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  async function deleteChallenge(challenge) {
+    if (busy) return;
+
+    const confirmed = confirm(
+      `Delete "${challenge.name}" at position ${challenge.position}?\n\n` +
+      "All challenges below it will move up one position. This cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    setBusy(true);
+    showMessage("Deleting challenge and closing the position gap...");
+
+    try {
+      const { error } = await db.rpc("ybcc_admin_delete_challenge", {
+        p_id: String(challenge.id)
+      });
+
+      if (error) throw error;
+
+      if (String(editingId) === String(challenge.id)) {
+        resetEditor();
+      }
+
+      showMessage("Challenge deleted and positions updated successfully.", "success");
+      await loadChallenges();
+    } catch (error) {
+      showMessage("Delete failed: " + error.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Keep the login/dashboard view in sync with the auth session.
+  db.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+      $("loginPanel").hidden = false;
+      $("dashboard").hidden = true;
+    }
+  });
+
+  checkAdmin().catch(error => {
+    showMessage(error.message, "error");
+  });
+
+  updatePointsPreview();
+</script>
+</body>
+</html>

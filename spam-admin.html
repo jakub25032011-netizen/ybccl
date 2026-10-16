@@ -1,0 +1,1256 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YBCSPCL Admin Panel</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --background: #0b0d12;
+            --panel: #12151d;
+            --panel-hover: #191e29;
+            --border: #252b38;
+            --text: #f2f4f8;
+            --muted: #939bad;
+            --accent: #ed414b;
+            --green: #55d6a0;
+            --orange: #ffb454;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            background: var(--background);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1050px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        h1 { margin-bottom: 4px; color: var(--accent); }
+        h2 { margin-top: 0; }
+        p { overflow-wrap: anywhere; }
+        .muted { color: var(--muted); }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            margin: 20px 0;
+        }
+
+        input:not([type="checkbox"]), button, select {
+            width: 100%;
+            padding: 12px;
+            margin: 7px 0;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+
+        input, select {
+            background: var(--background);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        select option {
+            background: var(--panel);
+            color: var(--text);
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+
+        button {
+            border: 0;
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover { filter: brightness(1.12); }
+        button:disabled { opacity: .55; cursor: wait; }
+        button.secondary { background: #303747; }
+        button.delete { background: #872d35; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .legacy-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: var(--background);
+            cursor: pointer;
+        }
+
+        .legacy-field input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: var(--orange);
+            flex-shrink: 0;
+        }
+
+        .legacy-field span { color: var(--text); }
+
+        .challenge {
+            display: grid;
+            grid-template-columns: 65px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            margin: 10px 0;
+            background: var(--panel-hover);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+        }
+
+        .position {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .challenge-name {
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .details {
+            color: var(--muted);
+            font-size: 13px;
+            overflow-wrap: anywhere;
+            margin-top: 4px;
+        }
+
+        .legacy-badge {
+            display: inline-block;
+            color: var(--orange);
+            border: 1px solid #76562e;
+            background: #302518;
+            padding: 1px 7px;
+            border-radius: 5px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .actions button {
+            width: auto;
+            margin: 0;
+            padding: 9px 12px;
+        }
+
+        .hint {
+            padding: 12px;
+            background: #20171b;
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #message, #loginMessage, #playerMessage {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .error { color: #ff7777; }
+        .success { color: var(--green); }
+
+        .top-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .top-actions button { width: auto; }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .count {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .completion-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            background: var(--panel-hover);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .completion-item input {
+            width: 21px;
+            height: 21px;
+            margin: 0;
+            flex-shrink: 0;
+            accent-color: var(--green);
+            cursor: pointer;
+        }
+
+        .completion-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .completion-title {
+            color: var(--text);
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .completion-points {
+            color: var(--green);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .player-summary {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 12px;
+            margin: 12px 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--background);
+        }
+
+        .player-summary strong {
+            color: var(--green);
+        }
+
+        [hidden] { display: none !important; }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .panel { padding: 16px; }
+            .form-grid { grid-template-columns: 1fr; }
+
+            .challenge {
+                grid-template-columns: 42px minmax(0, 1fr);
+            }
+
+            .actions { grid-column: 2; }
+            .top-actions { width: 100%; }
+            .top-actions button { flex: 1; }
+
+            .completion-points {
+                white-space: normal;
+                text-align: right;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>YBCSPCL Admin Panel</h1>
+    <p class="muted">YBC Spam Challenge List management</p>
+
+    <section id="loginPanel" class="panel">
+        <h2>Admin Login</h2>
+        <p class="muted">Use your existing YBCCL administrator account.</p>
+
+        <form id="loginForm">
+            <label for="email">Email</label>
+            <input id="email" type="email" autocomplete="username"
+                   placeholder="Admin email" required>
+
+            <label for="password">Password</label>
+            <input id="password" type="password"
+                   autocomplete="current-password"
+                   placeholder="Password" required>
+
+            <button id="loginButton" type="submit">Log In</button>
+        </form>
+
+        <p id="loginMessage" role="status"></p>
+    </section>
+
+    <main id="dashboard" hidden>
+
+        <section class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>Dashboard</h2>
+                    <p id="account" class="muted"></p>
+                </div>
+
+                <div class="top-actions">
+                    <button type="button" class="secondary"
+                        onclick="location.href='admin.html'">
+                        YBCCL Admin
+                    </button>
+
+                    <button type="button" class="secondary"
+                        onclick="location.href='spam.html'">
+                        View YBCSPCL
+                    </button>
+
+                    <button type="button" class="secondary"
+                        onclick="location.href='spam-players.html'">
+                        Player Leaderboard
+                    </button>
+
+                    <button id="logoutButton" type="button"
+                        class="secondary">
+                        Log Out
+                    </button>
+                </div>
+            </div>
+
+            <p id="message" role="status"></p>
+        </section>
+
+        <!-- PLAYER MANAGEMENT -->
+        <section class="panel" id="playerPanel">
+            <h2>Player Management</h2>
+
+            <p class="muted">
+                Add players and record their completed spam challenges.
+                Every checkbox change saves immediately.
+            </p>
+
+            <form id="playerForm">
+                <label for="playerUsername">New player username</label>
+                <input id="playerUsername" type="text"
+                    maxlength="100" placeholder="Enter player username"
+                    autocomplete="off" required>
+
+                <button id="addPlayerButton" type="submit">
+                    Add Player
+                </button>
+            </form>
+
+            <p id="playerMessage" role="status"></p>
+
+            <label for="playerSelector">Select a player</label>
+            <select id="playerSelector">
+                <option value="">Loading players...</option>
+            </select>
+
+            <div id="playerSummary" class="player-summary" hidden>
+                <span>Completed: <strong id="completedCount">0</strong></span>
+                <span>Total points: <strong id="playerPoints">0</strong></span>
+            </div>
+
+            <div class="section-heading">
+                <h3>Completed Challenges</h3>
+                <span id="completionCount" class="count"></span>
+            </div>
+
+            <p class="muted">
+                Tick a challenge to record its completion.
+                Untick it to remove the record. Legacy challenges and
+                challenges below position 50 award zero points.
+            </p>
+
+            <div id="completionList">
+                Add or select a player to manage completions.
+            </div>
+        </section>
+
+        <!-- EXISTING CHALLENGE EDITOR -->
+        <section class="panel" id="editorPanel">
+            <h2 id="editorTitle">Add a Spam Challenge</h2>
+
+            <p class="hint">
+                Adding at an occupied position shifts other challenges down.
+                Editing moves the challenge to its new position.
+                Deleting a challenge closes the gap automatically.
+                Legacy challenges receive 0 points.
+            </p>
+
+            <form id="challengeForm">
+                <div class="form-grid">
+                    <div>
+                        <label for="position">Position</label>
+                        <input id="position" type="number"
+                            min="1" step="1" placeholder="1" required>
+                    </div>
+
+                    <div>
+                        <label for="name">Challenge name</label>
+                        <input id="name" type="text"
+                            maxlength="200" required>
+                    </div>
+
+                    <div>
+                        <label for="creator">Creator</label>
+                        <input id="creator" type="text"
+                            maxlength="200" required>
+                    </div>
+
+                    <div>
+                        <label for="verifier">Verifier</label>
+                        <input id="verifier" type="text"
+                            maxlength="200" required>
+                    </div>
+
+                    <div>
+                        <label class="legacy-field" for="isLegacy">
+                            <input id="isLegacy" type="checkbox">
+                            <span>Legacy challenge (0 points)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="saveButton" type="submit">
+                    Add Challenge
+                </button>
+
+                <button id="cancelButton" type="button"
+                    class="secondary" hidden>
+                    Cancel Editing
+                </button>
+            </form>
+        </section>
+
+        <!-- EXISTING CHALLENGE LIST -->
+        <section class="panel">
+            <div class="section-heading">
+                <h2>Current Challenges</h2>
+                <span id="challengeCount" class="count"></span>
+            </div>
+
+            <p class="muted">
+                Challenges appear in leaderboard position order.
+            </p>
+
+            <div id="challengeList">Loading challenges...</div>
+        </section>
+    </main>
+</div>
+
+<script>
+"use strict";
+
+const SUPABASE_URL =
+    "https://hdsorzrcvvyakckbgegk.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable__RCrx7HGA5RDkv0t63O0sg_JNT-qk8P";
+
+const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+const $ = id => document.getElementById(id);
+
+let challenges = [];
+let players = [];
+let completedChallengeIds = new Set();
+let selectedPlayerId = "";
+let editingId = null;
+let busy = false;
+
+function showMessage(message, type = "") {
+    $("message").textContent = message;
+    $("message").className = type;
+}
+
+function showPlayerMessage(message, type = "") {
+    $("playerMessage").textContent = message;
+    $("playerMessage").className = type;
+}
+
+function setBusy(value) {
+    busy = value;
+
+    $("saveButton").disabled = value;
+    $("logoutButton").disabled = value;
+    $("cancelButton").disabled = value;
+    $("loginButton").disabled = value;
+    $("addPlayerButton").disabled = value;
+
+    document.querySelectorAll(".actions button").forEach(button => {
+        button.disabled = value;
+    });
+}
+
+// Same approved points formula as the public challenge leaderboard.
+function getChallengePoints(challenge) {
+    const position = Number(challenge.position);
+
+    if (
+        challenge.is_legacy === true ||
+        !Number.isInteger(position) ||
+        position < 1 ||
+        position > 50
+    ) {
+        return 0;
+    }
+
+    return Math.round(
+        1000 * Math.pow(10 / 1000, (position - 1) / 49)
+    );
+}
+
+// Verify the signed-in account is an authorised administrator.
+async function checkAdmin() {
+    const {
+        data: { session },
+        error
+    } = await db.auth.getSession();
+
+    if (error) throw error;
+
+    if (!session) {
+        $("loginPanel").hidden = false;
+        $("dashboard").hidden = true;
+        return false;
+    }
+
+    const { data: isAdmin, error: adminError } =
+        await db.rpc("is_ybcc_admin");
+
+    if (adminError) {
+        throw new Error(
+            "Could not verify admin permissions: " +
+            adminError.message
+        );
+    }
+
+    if (isAdmin !== true) {
+        await db.auth.signOut();
+
+        $("loginPanel").hidden = false;
+        $("dashboard").hidden = true;
+
+        throw new Error(
+            "This account is not authorised as a YBCCL admin."
+        );
+    }
+
+    $("loginPanel").hidden = true;
+    $("dashboard").hidden = false;
+    $("account").textContent = session.user.email || "Signed in";
+
+    await loadChallenges();
+    await loadPlayers();
+
+    return true;
+}
+
+// Existing login.
+$("loginForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    $("loginMessage").textContent = "";
+    $("loginButton").disabled = true;
+
+    try {
+        const { error } = await db.auth.signInWithPassword({
+            email: $("email").value.trim(),
+            password: $("password").value
+        });
+
+        if (error) throw error;
+
+        await checkAdmin();
+    } catch (error) {
+        $("loginMessage").textContent = error.message;
+        $("loginMessage").className = "error";
+    } finally {
+        $("loginButton").disabled = false;
+    }
+});
+
+// Existing logout.
+$("logoutButton").addEventListener("click", async () => {
+    if (busy) return;
+
+    const { error } = await db.auth.signOut();
+
+    if (error) {
+        showMessage("Log out failed: " + error.message, "error");
+        return;
+    }
+
+    resetEditor();
+
+    $("loginPanel").hidden = false;
+    $("dashboard").hidden = true;
+    $("password").value = "";
+    $("loginMessage").textContent = "";
+});
+
+// Load the existing challenge list.
+async function loadChallenges() {
+    $("challengeList").textContent = "Loading challenges...";
+
+    const { data, error } = await db
+        .from("ybcspcl_challenges")
+        .select("id, position, name, creator, verifier, is_legacy")
+        .order("position", { ascending: true });
+
+    if (error) {
+        $("challengeList").textContent = "Could not load challenges.";
+
+        showMessage(
+            "Loading failed: " + error.message +
+            "\nCheck the table and its permissions in Supabase.",
+            "error"
+        );
+
+        throw error;
+    }
+
+    challenges = data || [];
+    renderChallenges();
+    renderCompletionChallenges();
+    updatePlayerSummary();
+}
+
+// Render the existing challenge cards and points.
+function renderChallenges() {
+    const list = $("challengeList");
+    list.replaceChildren();
+
+    $("challengeCount").textContent =
+        `${challenges.length} challenge${challenges.length === 1 ? "" : "s"}`;
+
+    if (challenges.length === 0) {
+        list.textContent = "No spam challenges have been added yet.";
+        return;
+    }
+
+    for (const challenge of challenges) {
+        const card = document.createElement("div");
+        card.className = "challenge";
+
+        const position = document.createElement("div");
+        position.className = "position";
+        position.textContent = "#" + challenge.position;
+
+        const info = document.createElement("div");
+
+        const name = document.createElement("div");
+        name.className = "challenge-name";
+        name.textContent = challenge.name;
+
+        if (challenge.is_legacy) {
+            const badge = document.createElement("span");
+            badge.className = "legacy-badge";
+            badge.textContent = "LEGACY";
+            name.appendChild(badge);
+        }
+
+        const details = document.createElement("div");
+        details.className = "details";
+        details.textContent =
+            `Creator: ${challenge.creator} · Verifier: ${challenge.verifier}`;
+
+        const points = document.createElement("div");
+        points.className = "details";
+        points.textContent =
+            `Points: ${getChallengePoints(challenge)}`;
+
+        info.append(name, details, points);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "secondary";
+        edit.textContent = "Edit";
+        edit.disabled = busy;
+        edit.addEventListener("click", () => startEditing(challenge));
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "delete";
+        remove.textContent = "Delete";
+        remove.disabled = busy;
+        remove.addEventListener("click", () => deleteChallenge(challenge));
+
+        actions.append(edit, remove);
+        card.append(position, info, actions);
+        list.append(card);
+    }
+}
+
+// Add a player.
+$("playerForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    if (busy) return;
+
+    const username = $("playerUsername").value.trim();
+
+    if (!username) {
+        showPlayerMessage("Enter a player username.", "error");
+        return;
+    }
+
+    setBusy(true);
+    showPlayerMessage("Adding player...");
+
+    try {
+        const { data, error } = await db
+            .from("ybcspcl_players")
+            .insert({ username })
+            .select("id, username")
+            .single();
+
+        if (error) {
+            if (error.code === "23505") {
+                throw new Error("That username already exists.");
+            }
+            throw error;
+        }
+
+        $("playerUsername").value = "";
+
+        await loadPlayers();
+        $("playerSelector").value = String(data.id);
+        selectedPlayerId = String(data.id);
+
+        await loadCompletions();
+
+        showPlayerMessage(
+            `Player "${data.username}" added successfully.`,
+            "success"
+        );
+    } catch (error) {
+        showPlayerMessage(
+            "Could not add player: " + error.message,
+            "error"
+        );
+    } finally {
+        setBusy(false);
+        renderChallenges();
+    }
+});
+
+// Load registered players.
+async function loadPlayers() {
+    const previousId = selectedPlayerId;
+
+    const { data, error } = await db
+        .from("ybcspcl_players")
+        .select("id, username")
+        .order("username", { ascending: true });
+
+    if (error) {
+        $("playerSelector").replaceChildren();
+        $("playerSelector").add(new Option("Could not load players", ""));
+        showPlayerMessage(
+            "Loading players failed: " + error.message,
+            "error"
+        );
+        throw error;
+    }
+
+    players = data || [];
+
+    const selector = $("playerSelector");
+    selector.replaceChildren();
+
+    selector.add(new Option(
+        players.length ? "Choose a player..." : "No players yet",
+        ""
+    ));
+
+    for (const player of players) {
+        selector.add(
+            new Option(player.username, String(player.id))
+        );
+    }
+
+    const stillExists = players.some(
+        player => String(player.id) === previousId
+    );
+
+    selectedPlayerId = stillExists ? previousId : "";
+    selector.value = selectedPlayerId;
+
+    if (selectedPlayerId) {
+        await loadCompletions();
+    } else {
+        completedChallengeIds = new Set();
+        renderCompletionChallenges();
+        updatePlayerSummary();
+    }
+}
+
+// Select a player to manage.
+$("playerSelector").addEventListener("change", async () => {
+    selectedPlayerId = $("playerSelector").value;
+    completedChallengeIds = new Set();
+
+    await loadCompletions();
+});
+
+// Load completions for the selected player.
+async function loadCompletions() {
+    if (!selectedPlayerId) {
+        completedChallengeIds = new Set();
+        renderCompletionChallenges();
+        updatePlayerSummary();
+        return;
+    }
+
+    $("completionList").textContent = "Loading completions...";
+
+    const { data, error } = await db
+        .from("ybcspcl_completions")
+        .select("challenge_id")
+        .eq("player_id", Number(selectedPlayerId));
+
+    if (error) {
+        $("completionList").textContent =
+            "Could not load this player's completions.";
+
+        showPlayerMessage(
+            "Loading completions failed: " + error.message,
+            "error"
+        );
+        return;
+    }
+
+    completedChallengeIds = new Set(
+        (data || []).map(row => String(row.challenge_id))
+    );
+
+    renderCompletionChallenges();
+    updatePlayerSummary();
+}
+
+// Render the checkbox list for the selected player.
+function renderCompletionChallenges() {
+    const list = $("completionList");
+    list.replaceChildren();
+
+    if (!selectedPlayerId) {
+        list.textContent =
+            "Add a player and select them to manage their completions.";
+        $("completionCount").textContent = "";
+        $("playerSummary").hidden = true;
+        return;
+    }
+
+    if (challenges.length === 0) {
+        list.textContent = "No challenges are available.";
+        $("completionCount").textContent = "0 challenges";
+        updatePlayerSummary();
+        return;
+    }
+
+    $("completionCount").textContent =
+        `${completedChallengeIds.size} completed`;
+
+    for (const challenge of challenges) {
+        const label = document.createElement("label");
+        label.className = "completion-item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked =
+            completedChallengeIds.has(String(challenge.id));
+        checkbox.setAttribute(
+            "aria-label",
+            `Mark ${challenge.name} as completed`
+        );
+
+        checkbox.addEventListener("change", () => {
+            saveCompletionChange(challenge, checkbox);
+        });
+
+        const info = document.createElement("div");
+        info.className = "completion-info";
+
+        const title = document.createElement("div");
+        title.className = "completion-title";
+        title.textContent = `#${challenge.position} — ${challenge.name}`;
+
+        if (challenge.is_legacy) {
+            const badge = document.createElement("span");
+            badge.className = "legacy-badge";
+            badge.textContent = "LEGACY";
+            title.appendChild(badge);
+        }
+
+        const subtitle = document.createElement("div");
+        subtitle.className = "details";
+        subtitle.textContent =
+            `${challenge.creator} · ${challenge.verifier}`;
+
+        info.append(title, subtitle);
+
+        const points = document.createElement("span");
+        points.className = "completion-points";
+        points.textContent =
+            `${getChallengePoints(challenge)} pts`;
+
+        label.append(checkbox, info, points);
+        list.append(label);
+    }
+}
+
+// Save a checkbox change immediately.
+async function saveCompletionChange(challenge, checkbox) {
+    if (!selectedPlayerId) {
+        checkbox.checked = false;
+        return;
+    }
+
+    const shouldComplete = checkbox.checked;
+    const previousState =
+        completedChallengeIds.has(String(challenge.id));
+
+    checkbox.disabled = true;
+    showPlayerMessage("Saving completion...");
+
+    try {
+        if (shouldComplete) {
+            const { error } = await db
+                .from("ybcspcl_completions")
+                .insert({
+                    player_id: Number(selectedPlayerId),
+                    challenge_id: challenge.id
+                });
+
+            // A duplicate is already recorded, so it must not add points.
+            if (error && error.code !== "23505") {
+                throw error;
+            }
+
+            completedChallengeIds.add(String(challenge.id));
+        } else {
+            const { error } = await db
+                .from("ybcspcl_completions")
+                .delete()
+                .eq("player_id", Number(selectedPlayerId))
+                .eq("challenge_id", challenge.id);
+
+            if (error) throw error;
+
+            completedChallengeIds.delete(String(challenge.id));
+        }
+
+        renderCompletionChallenges();
+        updatePlayerSummary();
+
+        showPlayerMessage(
+            shouldComplete
+                ? "Completion saved successfully."
+                : "Completion removed successfully.",
+            "success"
+        );
+    } catch (error) {
+        // Restore the previous checkbox state if saving failed.
+        checkbox.checked = previousState;
+
+        showPlayerMessage(
+            "Could not save completion: " + error.message,
+            "error"
+        );
+    } finally {
+        checkbox.disabled = false;
+    }
+}
+
+// Calculate the selected player's total from the current challenge data.
+function updatePlayerSummary() {
+    if (!selectedPlayerId) {
+        $("playerSummary").hidden = true;
+        return;
+    }
+
+    let total = 0;
+    let count = 0;
+
+    for (const challenge of challenges) {
+        if (completedChallengeIds.has(String(challenge.id))) {
+            count++;
+            total += getChallengePoints(challenge);
+        }
+    }
+
+    $("playerSummary").hidden = false;
+    $("completedCount").textContent = String(count);
+    $("playerPoints").textContent =
+        total.toLocaleString("en-GB");
+}
+
+// Load a challenge into the existing editor.
+function startEditing(challenge) {
+    if (busy) return;
+
+    editingId = challenge.id;
+
+    $("position").value = challenge.position;
+    $("name").value = challenge.name;
+    $("creator").value = challenge.creator;
+    $("verifier").value = challenge.verifier;
+    $("isLegacy").checked = challenge.is_legacy === true;
+
+    $("editorTitle").textContent =
+        `Edit Spam Challenge #${challenge.position}`;
+
+    $("saveButton").textContent = "Save Changes";
+    $("cancelButton").hidden = false;
+
+    $("editorPanel").scrollIntoView({ behavior: "smooth" });
+}
+
+// Reset the existing editor.
+function resetEditor() {
+    editingId = null;
+    $("challengeForm").reset();
+    $("editorTitle").textContent = "Add a Spam Challenge";
+    $("saveButton").textContent = "Add Challenge";
+    $("cancelButton").hidden = true;
+}
+
+$("cancelButton").addEventListener("click", () => {
+    if (!busy) resetEditor();
+});
+
+// Existing add/edit RPC functions and Legacy update.
+async function saveChallenge(position, name, creator, verifier, isLegacy) {
+    const cleanName = name.trim();
+    const cleanCreator = creator.trim();
+    const cleanVerifier = verifier.trim();
+
+    if (!Number.isInteger(position) || position < 1) {
+        throw new Error("Position must be a whole number greater than 0.");
+    }
+
+    if (!cleanName || !cleanCreator || !cleanVerifier) {
+        throw new Error("Please fill in every field.");
+    }
+
+    let result;
+
+    if (editingId !== null) {
+        result = await db.rpc("ybcspcl_admin_update_challenge", {
+            p_id: editingId,
+            p_position: position,
+            p_name: cleanName,
+            p_creator: cleanCreator,
+            p_verifier: cleanVerifier
+        });
+    } else {
+        result = await db.rpc("ybcspcl_admin_add_challenge", {
+            p_position: position,
+            p_name: cleanName,
+            p_creator: cleanCreator,
+            p_verifier: cleanVerifier
+        });
+    }
+
+    if (result.error) throw result.error;
+
+    let targetQuery = db
+        .from("ybcspcl_challenges")
+        .select("id")
+        .eq("position", position)
+        .eq("name", cleanName)
+        .eq("creator", cleanCreator)
+        .eq("verifier", cleanVerifier);
+
+    if (editingId !== null) {
+        targetQuery = targetQuery.eq("id", editingId);
+    }
+
+    const { data: target, error: findError } =
+        await targetQuery.maybeSingle();
+
+    if (findError) {
+        throw new Error(
+            "Challenge was saved, but finding it for the Legacy update failed: " +
+            findError.message
+        );
+    }
+
+    if (!target) {
+        throw new Error(
+            "Challenge was saved, but it could not be identified for the " +
+            "Legacy update. Refresh the list before making another change."
+        );
+    }
+
+    const { error: legacyError } = await db
+        .from("ybcspcl_challenges")
+        .update({ is_legacy: isLegacy })
+        .eq("id", target.id);
+
+    if (legacyError) {
+        throw new Error(
+            "Challenge was saved, but updating its Legacy status failed: " +
+            legacyError.message
+        );
+    }
+}
+
+// Existing challenge form.
+$("challengeForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    if (busy) return;
+
+    const position = Number($("position").value);
+    const name = $("name").value;
+    const creator = $("creator").value;
+    const verifier = $("verifier").value;
+    const isLegacy = $("isLegacy").checked;
+
+    if (!Number.isInteger(position) || position < 1) {
+        showMessage(
+            "Position must be a whole number greater than 0.",
+            "error"
+        );
+        return;
+    }
+
+    setBusy(true);
+    showMessage("Saving challenge...");
+
+    try {
+        await saveChallenge(
+            position,
+            name,
+            creator,
+            verifier,
+            isLegacy
+        );
+
+        resetEditor();
+        await loadChallenges();
+
+        showMessage(
+            "Challenge and Legacy status saved successfully!",
+            "success"
+        );
+    } catch (error) {
+        showMessage(
+            "Save result: " + error.message +
+            "\nRefresh the list and check the challenge before retrying.",
+            "error"
+        );
+
+        try {
+            await loadChallenges();
+        } catch (_) {
+            // The loading function displays its own error.
+        }
+    } finally {
+        setBusy(false);
+        renderChallenges();
+    }
+});
+
+// Existing delete RPC.
+async function deleteChallenge(challenge) {
+    if (busy) return;
+
+    const confirmed = confirm(
+        `Delete "${challenge.name}" at position ${challenge.position}?\n\n` +
+        "Challenges below it will move up. This cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    setBusy(true);
+    showMessage("Deleting challenge...");
+
+    try {
+        const { error } = await db.rpc(
+            "ybcspcl_admin_delete_challenge",
+            { p_id: challenge.id }
+        );
+
+        if (error) throw error;
+
+        if (String(editingId) === String(challenge.id)) {
+            resetEditor();
+        }
+
+        await loadChallenges();
+        showMessage(
+            "Challenge deleted and positions updated.",
+            "success"
+        );
+    } catch (error) {
+        showMessage("Delete failed: " + error.message, "error");
+
+        try {
+            await loadChallenges();
+        } catch (_) {
+            // The loading function displays its own error.
+        }
+    } finally {
+        setBusy(false);
+        renderChallenges();
+    }
+}
+
+// Keep the screen in sync when signed out.
+db.auth.onAuthStateChange(event => {
+    if (event === "SIGNED_OUT") {
+        $("loginPanel").hidden = false;
+        $("dashboard").hidden = true;
+        selectedPlayerId = "";
+        completedChallengeIds = new Set();
+    }
+});
+
+// Check the existing session when the page opens.
+checkAdmin().catch(error => {
+    $("loginMessage").textContent = error.message;
+    $("loginMessage").className = "error";
+});
+</script>
+</body>
+</html>

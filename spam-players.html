@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YBCSPCL - Player Leaderboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #101116;
+            color: #f2f2f2;
+        }
+
+        header {
+            background: #191b24;
+            padding: 25px 15px;
+            text-align: center;
+            border-bottom: 2px solid #ff8c32;
+        }
+
+        header h1 {
+            margin: 0 0 8px;
+            color: #ff8c32;
+        }
+
+        header p {
+            color: #b8bac5;
+            margin: 0;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 15px;
+            background: #191b24;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            background: #292c38;
+            padding: 10px 16px;
+            border-radius: 6px;
+        }
+
+        nav a:hover {
+            background: #ff8c32;
+            color: #111;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+
+        .panel {
+            background: #191b24;
+            border: 1px solid #303341;
+            border-radius: 10px;
+            padding: 22px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .notice {
+            color: #b8bac5;
+            line-height: 1.6;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 14px 12px;
+            border-bottom: 1px solid #303341;
+        }
+
+        th {
+            color: #ff8c32;
+            background: #222530;
+        }
+
+        .empty {
+            text-align: center;
+            color: #b8bac5;
+            padding: 25px;
+        }
+
+        footer {
+            text-align: center;
+            color: #777b89;
+            padding: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>YBCSPCL</h1>
+        <p>Player Leaderboard</p>
+    </header>
+
+    <nav>
+        <a href="spam.html">Home</a>
+        <a href="spam.html#leaderboard">Challenge List</a>
+        <a href="spam-admin.html">Admin Panel</a>
+    </nav>
+
+    <main>
+        <section class="panel">
+            <h2>🏆 Player Rankings</h2>
+            <p class="notice">
+                Players will be ranked by the total points earned from
+                their recorded challenge completions.
+            </p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Completions</th>
+                            <th>Total Points</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playerTable">
+                        <tr>
+                            <td colspan="4" class="empty">
+                                Player leaderboard connection will be added next.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        YBCSPCL Player Leaderboard
+    </footer>
+</body>
+</html>

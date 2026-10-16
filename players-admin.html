@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YBCCL Player Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101116;color:#f4f4f5;font-family:Arial,sans-serif}
+header{padding:22px;background:#191a23;border-bottom:1px solid #30313c}
+header h1{margin:0;color:#ffad42}
+main{max-width:1000px;margin:25px auto;padding:0 16px}
+.panel{background:#191a23;border:1px solid #30313c;border-radius:12px;padding:20px;margin-bottom:18px}
+h2{margin-top:0}
+input,select,button{font:inherit;border-radius:7px;padding:11px;border:1px solid #414250}
+input,select{background:#101116;color:white}
+button{background:#ffad42;color:#171717;border:0;font-weight:bold;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row input{flex:1;min-width:180px}
+.row select{flex:1;min-width:180px}
+#levels{display:grid;gap:8px}
+.level{display:flex;align-items:center;gap:12px;background:#22232d;padding:12px;border-radius:8px}
+.level input{width:19px;height:19px;accent-color:#ffad42}
+.level span{flex:1}
+.points{color:#ffbd66;white-space:nowrap}
+.muted{color:#a4a5b2}
+#status{margin-top:12px;white-space:pre-wrap}
+.hidden{display:none}
+@media(max-width:500px){.level{gap:8px}.points{font-size:13px}}
+</style>
+</head>
+<body>
+<header><h1>YBCCL Player Admin</h1></header>
+<main>
+<section id="login" class="panel">
+<h2>Admin login</h2>
+<p class="muted">Sign in using your existing YBCCL admin account.</p>
+<form id="loginForm">
+<div class="row">
+<input id="email" type="email" placeholder="Admin email" required>
+<input id="password" type="password" placeholder="Password" required>
+<button type="submit">Log in</button>
+</div>
+</form>
+<p id="loginStatus"></p>
+</section>
+
+<section id="dashboard" class="hidden">
+<div class="panel">
+<div class="row" style="justify-content:space-between;align-items:center">
+<h2>Players</h2>
+<button id="logout">Log out</button>
+</div>
+<div class="row">
+<input id="newUsername" placeholder="New player's username" maxlength="50">
+<button id="addPlayer">Add player</button>
+</div>
+<p class="muted">Add each player once, then select them below.</p>
+</div>
+
+<div class="panel">
+<h2>Manage completions</h2>
+<div class="row">
+<select id="playerSelect"><option value="">Select a player</option></select>
+<button id="refresh">Refresh</button>
+</div>
+<div id="summary" style="margin:18px 0;font-size:18px">Choose a player to begin.</div>
+<div id="levels"></div>
+<p id="status"></p>
+</div>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://hdsorzrcvvyakckbgegk.supabase.co";
+const SUPABASE_KEY = "sb_publishable__RCrx7HGA5RDkv0t63O0sg_JNT-qk8P";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+let challenges = [];
+let players = [];
+let completed = new Set();
+let busy = false;
+
+function status(message, error=false){
+  $("status").textContent = message;
+  $("status").style.color = error ? "#ff7777" : "#9ee6a0";
+}
+
+async function checkAdmin(){
+  const {data:{session}} = await db.auth.getSession();
+  if(!session){
+    $("login").classList.remove("hidden");
+    $("dashboard").classList.add("hidden");
+    return false;
+  }
+  const {data,isError,error} = {data:null,isError:false,error:null};
+  const result = await db.rpc("is_ybcc_admin");
+  if(result.error || result.data !== true){
+    $("loginStatus").textContent = "This account is not recognised as a YBCCL admin.";
+    await db.auth.signOut();
+    return false;
+  }
+  $("login").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  await loadAll();
+  return true;
+}
+
+$("loginForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  $("loginStatus").textContent = "Logging in...";
+  const {error} = await db.auth.signInWithPassword({
+    email:$("email").value.trim(),
+    password:$("password").value
+  });
+  if(error){
+    $("loginStatus").textContent = error.message;
+    return;
+  }
+  await checkAdmin();
+});
+
+$("logout").addEventListener("click", async()=>{
+  await db.auth.signOut();
+  $("login").classList.remove("hidden");
+  $("dashboard").classList.add("hidden");
+});
+
+async function loadAll(){
+  status("Loading players and levels...");
+  const [p,c] = await Promise.all([
+    db.from("ybccl_players").select("id,username").order("username"),
+    db.from("challenges").select("id,position,name,is_legacy").order("position")
+  ]);
+  if(p.error || c.error){
+    status("Could not load data: "+(p.error?.message || c.error?.message),true);
+    return;
+  }
+  players=p.data;
+  challenges=c.data;
+  renderPlayers();
+  await loadSelectedPlayer();
+  status("Ready.");
+}
+
+function renderPlayers(){
+  const select=$("playerSelect");
+  const previous=select.value;
+  select.innerHTML='<option value="">Select a player</option>';
+  for(const p of players){
+    const o=document.createElement("option");
+    o.value=p.id;o.textContent=p.username;
+    select.appendChild(o);
+  }
+  if(players.some(p=>p.id===previous))select.value=previous;
+}
+
+$("addPlayer").addEventListener("click",async()=>{
+  const username=$("newUsername").value.trim();
+  if(!username)return status("Enter a username first.",true);
+  const {data,error}=await db.from("ybccl_players")
+    .insert({username}).select("id,username").single();
+  if(error)return status("Could not add player: "+error.message,true);
+  $("newUsername").value="";
+  players.push(data);
+  players.sort((a,b)=>a.username.localeCompare(b.username));
+  renderPlayers();
+  $("playerSelect").value=data.id;
+  await loadSelectedPlayer();
+  status("Player added!");
+});
+
+$("refresh").addEventListener("click",loadAll);
+$("playerSelect").addEventListener("change",loadSelectedPlayer);
+
+async function loadSelectedPlayer(){
+  const playerId=$("playerSelect").value;
+  $("levels").innerHTML="";
+  completed=new Set();
+  if(!playerId){
+    $("summary").textContent="Choose a player to begin.";
+    return;
+  }
+  status("Loading completions...");
+  const {data,error}=await db.from("ybccl_player_completions")
+    .select("challenge_id").eq("player_id",playerId);
+  if(error)return status("Could not load completions: "+error.message,true);
+  completed=new Set(data.map(x=>String(x.challenge_id)));
+  renderLevels();
+  status("Completions loaded.");
+}
+
+function pointsFor(challenge){
+  if(challenge.is_legacy || challenge.position>50)return 0;
+  const points=[1000,967,934,902,870,839,808,778,748,718,
+  689,661,633,605,578,552,526,500,475,451,
+  427,403,380,358,336,315,294,274,255,236,
+  217,200,183,166,150,135,121,107,94,82,
+  70,60,50,41,33,26,20,15,12,10];
+  return points[challenge.position-1] || 0;
+}
+
+function renderLevels(){
+  const container=$("levels");
+  container.innerHTML="";
+  let total=0,count=0;
+  for(const c of challenges){
+    const beaten=completed.has(String(c.id));
+    if(beaten){total+=pointsFor(c);count++}
+    const label=document.createElement("label");
+    label.className="level";
+    const checkbox=document.createElement("input");
+    checkbox.type="checkbox";
+    checkbox.checked=beaten;
+    checkbox.disabled=busy;
+    checkbox.addEventListener("change",()=>toggleCompletion(c,checkbox));
+    const name=document.createElement("span");
+    name.textContent="#"+c.position+" — "+c.name+(c.is_legacy?" (Legacy)":"");
+    const pts=document.createElement("strong");
+    pts.className="points";
+    pts.textContent=pointsFor(c)+" pts";
+    label.append(checkbox,name,pts);
+    container.appendChild(label);
+  }
+  $("summary").textContent=count+" levels beaten · "+total.toLocaleString()+" total points";
+}
+
+async function toggleCompletion(challenge,checkbox){
+  if(busy)return;
+  const playerId=$("playerSelect").value;
+  if(!playerId)return;
+  busy=true;
+  status("Saving completion...");
+  document.querySelectorAll("#levels input").forEach(x=>x.disabled=true);
+  let result;
+  if(checkbox.checked){
+    result=await db.from("ybccl_player_completions").insert({
+      player_id:playerId,
+      challenge_id:String(challenge.id)
+    });
+  }else{
+    result=await db.from("ybccl_player_completions").delete()
+      .eq("player_id",playerId).eq("challenge_id",String(challenge.id));
+  }
+  busy=false;
+  if(result.error){
+    status("Save failed: "+result.error.message,true);
+    await loadSelectedPlayer();
+    return;
+  }
+  await loadSelectedPlayer();
+  status("Saved! Player points updated.");
+}
+
+db.auth.onAuthStateChange((_event,session)=>{
+  if(session) setTimeout(checkAdmin,0);
+});
+
+checkAdmin();
+</script>
+</body>
+</html>

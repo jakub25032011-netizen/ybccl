@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YBCCL Player Leaderboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101116;color:#f4f4f5;font-family:Arial,sans-serif}
+header{padding:24px 16px;background:#191a23;border-bottom:1px solid #30313c}
+header h1{margin:0;color:#ffad42}
+header p{color:#a4a5b2;margin-bottom:0}
+main{max-width:1000px;margin:28px auto;padding:0 16px}
+.panel{background:#191a23;border:1px solid #30313c;border-radius:12px;padding:20px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+button{background:#ffad42;color:#171717;border:0;border-radius:7px;padding:10px 15px;font-weight:bold;cursor:pointer}
+.summary{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
+.stat{flex:1;min-width:140px;background:#22232d;padding:16px;border-radius:9px}
+.stat strong{display:block;font-size:24px;color:#ffbd66;margin-top:7px}
+.stat span{color:#a4a5b2;font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:14px}
+th,td{text-align:left;padding:14px 10px;border-bottom:1px solid #30313c}
+th{color:#a4a5b2;font-size:13px}
+tbody tr:hover{background:#22232d}
+.rank{font-weight:bold;color:#ffbd66}
+.points{font-weight:bold}
+#status{color:#a4a5b2;margin-top:15px}
+.empty{text-align:center;padding:30px;color:#a4a5b2}
+@media(max-width:550px){
+ th,td{padding:11px 6px;font-size:13px}
+ .panel{padding:12px}
+ .stat strong{font-size:20px}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>YBCCL Player Leaderboard</h1>
+<p>Compete. Complete. Climb the rankings.</p>
+</header>
+<main>
+<section class="panel">
+<div class="top">
+<div>
+<h2 style="margin:0">Player Rankings</h2>
+<p style="color:#a4a5b2;margin-bottom:0">Ranked by total YBCCL points</p>
+</div>
+<button id="refresh">Refresh</button>
+</div>
+
+<div class="summary">
+<div class="stat"><span>Registered players</span><strong id="playerCount">—</strong></div>
+<div class="stat"><span>Total completions</span><strong id="completionCount">—</strong></div>
+<div class="stat"><span>Highest score</span><strong id="topScore">—</strong></div>
+</div>
+
+<div style="overflow-x:auto">
+<table>
+<thead><tr>
+<th>Rank</th>
+<th>Player</th>
+<th>Levels beaten</th>
+<th>Total points</th>
+</tr></thead>
+<tbody id="rankings">
+<tr><td colspan="4" class="empty">Loading leaderboard...</td></tr>
+</tbody>
+</table>
+</div>
+<p id="status">Connecting to YBCCL...</p>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL="https://hdsorzrcvvyakckbgegk.supabase.co";
+const SUPABASE_KEY="sb_publishable__RCrx7HGA5RDkv0t63O0sg_JNT-qk8P";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+async function loadLeaderboard(){
+  const status=document.getElementById("status");
+  const body=document.getElementById("rankings");
+  status.textContent="Loading leaderboard...";
+  body.innerHTML='<tr><td colspan="4" class="empty">Loading...</td></tr>';
+
+  const {data,error}=await db.from("ybccl_player_scores")
+    .select("id,username,levels_beaten,total_points")
+    .order("total_points",{ascending:false})
+    .order("username",{ascending:true});
+
+  if(error){
+    body.innerHTML='<tr><td colspan="4" class="empty">Could not load the leaderboard.</td></tr>';
+    status.textContent="Error: "+error.message;
+    return;
+  }
+
+  const players=data||[];
+  document.getElementById("playerCount").textContent=players.length;
+  document.getElementById("completionCount").textContent=
+    players.reduce((sum,p)=>sum+Number(p.levels_beaten||0),0);
+  document.getElementById("topScore").textContent=
+    players.length?Number(players[0].total_points).toLocaleString():"0";
+
+  if(!players.length){
+    body.innerHTML='<tr><td colspan="4" class="empty">No players yet. Check back soon!</td></tr>';
+    status.textContent="Leaderboard updated.";
+    return;
+  }
+
+  body.innerHTML="";
+  players.forEach((p,index)=>{
+    const tr=document.createElement("tr");
+    const rank=document.createElement("td");
+    rank.className="rank";
+    rank.textContent="#"+(index+1);
+    const username=document.createElement("td");
+    username.textContent=p.username;
+    const levels=document.createElement("td");
+    levels.textContent=Number(p.levels_beaten||0);
+    const points=document.createElement("td");
+    points.className="points";
+    points.textContent=Number(p.total_points||0).toLocaleString();
+    tr.append(rank,username,levels,points);
+    body.appendChild(tr);
+  });
+  status.textContent="Last updated: "+new Date().toLocaleTimeString();
+}
+
+document.getElementById("refresh").addEventListener("click",loadLeaderboard);
+loadLeaderboard();
+setInterval(loadLeaderboard,30000);
+</script>
+</body>
+</html>

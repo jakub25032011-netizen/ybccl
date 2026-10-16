@@ -1,0 +1,812 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YBCSPCL | YBC Spam Challenge List</title>
+    <meta name="description" content="The YBC Spam Challenge List: Geometry Dash spam challenges ranked by difficulty.">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --background: #0b0d12;
+            --panel: #12151d;
+            --panel-hover: #191e29;
+            --border: #252b38;
+            --text: #f2f4f8;
+            --muted: #939bad;
+            --accent: #ed414b;
+            --green: #55d6a0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 90px;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .container {
+            width: min(1120px, 92%);
+            margin: auto;
+        }
+
+        header {
+            background: #0e1016;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .navbar {
+            min-height: 76px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 21px;
+            font-weight: 900;
+        }
+
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            background: var(--accent);
+            color: white;
+            border-radius: 9px;
+        }
+
+        .logo small {
+            display: block;
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 2px;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        nav a {
+            color: var(--muted);
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: white;
+        }
+
+        nav .nav-submit {
+            color: white;
+            background: var(--accent);
+            padding: 10px 15px;
+            border-radius: 6px;
+        }
+
+        .hero {
+            padding: 90px 0 65px;
+            border-bottom: 1px solid var(--border);
+            background: radial-gradient(
+                ellipse at 80% 10%,
+                rgba(237, 65, 75, 0.12),
+                transparent 45%
+            );
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ff8188;
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        h1 {
+            font-size: clamp(42px, 7vw, 76px);
+            line-height: 1.05;
+            letter-spacing: -3px;
+            max-width: 800px;
+            margin-bottom: 22px;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .hero p {
+            max-width: 620px;
+            color: var(--muted);
+            font-size: 17px;
+            margin-bottom: 30px;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 13px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 800;
+            transition: 0.2s;
+        }
+
+        .button-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background: #ff5660;
+            transform: translateY(-2px);
+        }
+
+        .button-secondary {
+            border: 1px solid var(--border);
+            background: var(--panel);
+        }
+
+        .button-secondary:hover {
+            background: var(--panel-hover);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            padding: 28px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 9px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-number {
+            font-size: 30px;
+            font-weight: 900;
+            margin-top: 4px;
+        }
+
+        .stat-note {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        section.content-section {
+            padding: 55px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 15px;
+            margin-bottom: 22px;
+        }
+
+        .section-heading h2 {
+            font-size: 25px;
+            letter-spacing: -0.7px;
+        }
+
+        .section-heading p {
+            color: var(--muted);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .text-link {
+            color: #ff8188;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .leaderboard {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .leaderboard-toolbar {
+            padding: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .leaderboard-toolbar h3 {
+            font-size: 18px;
+        }
+
+        .search {
+            width: min(100%, 330px);
+            padding: 12px 14px;
+            background: var(--background);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search:focus {
+            outline: 1px solid var(--accent);
+            border-color: var(--accent);
+        }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 700px;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead {
+            background: #0e1016;
+        }
+
+        th {
+            padding: 14px 18px;
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 16px 18px;
+            border-top: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: var(--panel-hover);
+        }
+
+        .rank {
+            color: #ff8188;
+            font-weight: 900;
+            font-size: 17px;
+        }
+
+        .challenge-name {
+            font-weight: 800;
+            overflow-wrap: anywhere;
+        }
+
+        .points {
+            color: var(--green);
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .legacy-badge {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 6px;
+            color: #ffb454;
+            border: 1px solid #76562e;
+            border-radius: 4px;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+
+        .empty-state {
+            padding: 30px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .error {
+            color: #ff8188;
+        }
+
+        .leaderboard-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 15px 18px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .refresh-button {
+            border: 1px solid var(--border);
+            background: var(--panel-hover);
+            color: var(--text);
+            padding: 8px 13px;
+            border-radius: 6px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .refresh-button:hover {
+            border-color: var(--accent);
+        }
+
+        .refresh-button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        footer {
+            padding: 28px 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        @media (max-width: 700px) {
+            .navbar {
+                padding: 14px 0;
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            nav {
+                gap: 12px;
+            }
+
+            .hero {
+                padding: 60px 0 45px;
+            }
+
+            h1 {
+                letter-spacing: -1.5px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .section-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .leaderboard-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .search {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container navbar">
+            <a class="logo" href="#home">
+                <span class="logo-mark">S</span>
+                <span>
+                    YBCSPCL
+                    <small>YBC SPAM CHALLENGE LIST</small>
+                </span>
+            </a>
+
+            <nav>
+                <a href="#home">Home</a>
+                <a href="#leaderboard">Leaderboard</a>
+                <a href="explore.html">Explore Lists</a>
+                <a href="spam-rules.html">Official Rules</a>
+                <a href="spam-admin.html" class="nav-submit">Admin Panel</a>
+<a href="spam-players.html">Player Leaderboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero" id="home">
+            <div class="container">
+                <div class="eyebrow">
+                    <span class="status-dot"></span>
+                    THE YBC SPAM CHALLENGE LIST
+                </div>
+
+                <h1>
+                    Push your limits.<br>
+                    <span>Master the spam.</span>
+                </h1>
+
+                <p>
+                    Welcome to the YBC Spam Challenge List.
+                    Discover Geometry Dash spam challenges, explore
+                    the rankings and see which challenges occupy
+                    the highest positions.
+                </p>
+
+                <div class="buttons">
+                    <a class="button button-primary" href="#leaderboard">
+                        View Leaderboard &rarr;
+                    </a>
+
+                    <a class="button button-secondary" href="explore.html">
+                        Explore All Lists
+                    </a>
+
+                    <a class="button button-secondary" href="spam-rules.html">
+                        Official Rules
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <div class="container">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Ranked challenges</div>
+                    <div class="stat-number" id="totalChallenges">--</div>
+                    <div class="stat-note">Challenges on the list</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-label">Top position</div>
+                    <div class="stat-number" id="topPosition">--</div>
+                    <div class="stat-note">Highest-ranked challenge</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-label">List status</div>
+                    <div class="stat-number" style="font-size:24px">LIVE</div>
+                    <div class="stat-note">Connected to the database</div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content-section" id="leaderboard">
+            <div class="container">
+                <div class="section-heading">
+                    <div>
+                        <h2>YBCSPCL Leaderboard</h2>
+                        <p>
+                            Browse ranked spam challenges and search by
+                            challenge name, creator or verifier.
+                        </p>
+                    </div>
+
+                    <span class="text-link">OFFICIAL RANKINGS</span>
+                </div>
+
+                <div class="leaderboard">
+                    <div class="leaderboard-toolbar">
+                        <h3>Ranked Challenges</h3>
+
+                        <input
+                            class="search"
+                            id="search"
+                            type="search"
+                            placeholder="Search challenges..."
+                            aria-label="Search challenges"
+                        >
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Position</th>
+                                    <th>Challenge</th>
+                                    <th>Creator</th>
+                                    <th>Verifier</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="challengeRows">
+                                <tr>
+                                    <td colspan="5" class="empty-state">
+                                        Loading challenges...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-bottom">
+                        <span id="resultCount">Loading leaderboard...</span>
+
+                        <button
+                            type="button"
+                            class="refresh-button"
+                            id="refreshButton"
+                        >
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer-inner">
+            <span>
+                <strong>YBCSPCL</strong> &mdash; YBC Spam Challenge List
+            </span>
+
+            <span>
+                <a href="index.html">YBCCL Home</a>
+                &nbsp; · &nbsp;
+                <a href="explore.html">Explore Lists</a>
+            </span>
+        </div>
+    </footer>
+
+    <script>
+        "use strict";
+
+        // Existing Supabase project and publishable key.
+        const SUPABASE_URL =
+            "https://hdsorzrcvvyakckbgegk.supabase.co";
+
+        const SUPABASE_KEY =
+            "sb_publishable__RCrx7HGA5RDkv0t63O0sg_JNT-qk8P";
+
+        const db = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+        const $ = id => document.getElementById(id);
+
+        let challenges = [];
+
+        // Approved scoring formula:
+        // #1 = 1000, #50 = 10, outside the top 50 = 0.
+        // Legacy challenges always receive 0.
+        function getChallengePoints(challenge) {
+            const position = Number(challenge.position);
+
+            if (
+                challenge.is_legacy === true ||
+                !Number.isInteger(position) ||
+                position < 1 ||
+                position > 50
+            ) {
+                return 0;
+            }
+
+            return Math.round(
+                1000 * Math.pow(
+                    10 / 1000,
+                    (position - 1) / 49
+                )
+            );
+        }
+
+        function showStatus(message, isError = false) {
+            $("challengeRows").replaceChildren();
+
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+
+            cell.colSpan = 5;
+            cell.className =
+                "empty-state" + (isError ? " error" : "");
+            cell.textContent = message;
+
+            row.appendChild(cell);
+            $("challengeRows").appendChild(row);
+        }
+
+        function renderChallenges() {
+            const query = $("search").value.trim().toLowerCase();
+
+            const filtered = challenges.filter(challenge => {
+                return [
+                    challenge.name,
+                    challenge.creator,
+                    challenge.verifier
+                ].some(value =>
+                    String(value || "").toLowerCase().includes(query)
+                );
+            });
+
+            $("challengeRows").replaceChildren();
+
+            if (filtered.length === 0) {
+                showStatus(
+                    challenges.length > 0
+                        ? "No challenges match your search."
+                        : "No YBCSPCL challenges have been added yet."
+                );
+
+                $("resultCount").textContent =
+                    challenges.length > 0
+                        ? "No matching challenges"
+                        : "0 challenges";
+
+                return;
+            }
+
+            for (const challenge of filtered) {
+                const row = document.createElement("tr");
+
+                const position = document.createElement("td");
+                position.className = "rank";
+                position.textContent = "#" + challenge.position;
+
+                const name = document.createElement("td");
+                name.className = "challenge-name";
+                name.textContent = challenge.name;
+
+                if (challenge.is_legacy === true) {
+                    const badge = document.createElement("span");
+                    badge.className = "legacy-badge";
+                    badge.textContent = "LEGACY";
+                    name.appendChild(badge);
+                }
+
+                const creator = document.createElement("td");
+                creator.textContent = challenge.creator || "";
+
+                const verifier = document.createElement("td");
+                verifier.textContent = challenge.verifier || "";
+
+                const points = document.createElement("td");
+                points.className = "points";
+                points.textContent =
+                    getChallengePoints(challenge).toLocaleString("en-GB");
+
+                row.append(
+                    position,
+                    name,
+                    creator,
+                    verifier,
+                    points
+                );
+
+                $("challengeRows").appendChild(row);
+            }
+
+            $("resultCount").textContent =
+                `Showing ${filtered.length} of ${challenges.length} challenges`;
+        }
+
+        async function loadChallenges() {
+            $("refreshButton").disabled = true;
+            $("refreshButton").textContent = "Loading...";
+
+            try {
+                const { data, error } = await db
+                    .from("ybcspcl_challenges")
+                    .select(
+                        "id, position, name, creator, verifier, is_legacy"
+                    )
+                    .order("position", { ascending: true });
+
+                if (error) {
+                    throw error;
+                }
+
+                challenges = data || [];
+
+                $("totalChallenges").textContent =
+                    challenges.length.toLocaleString("en-GB");
+
+                $("topPosition").textContent = challenges.length
+                    ? "#" + challenges[0].position
+                    : "--";
+
+                renderChallenges();
+
+            } catch (error) {
+                console.error("YBCSPCL leaderboard error:", error);
+
+                $("totalChallenges").textContent = "--";
+                $("topPosition").textContent = "--";
+
+                showStatus(
+                    "Could not load the leaderboard. Check your Supabase " +
+                    "table and public read permissions. Error: " +
+                    (error.message || "Unknown error"),
+                    true
+                );
+
+                $("resultCount").textContent = "Leaderboard unavailable";
+
+            } finally {
+                $("refreshButton").disabled = false;
+                $("refreshButton").textContent = "Refresh";
+            }
+        }
+
+        $("search").addEventListener("input", renderChallenges);
+        $("refreshButton").addEventListener("click", loadChallenges);
+
+        loadChallenges();
+
+        // Automatically refresh the leaderboard every 30 seconds.
+        setInterval(loadChallenges, 30000);
+    </script>
+</body>
+</html>
